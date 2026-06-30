@@ -7,9 +7,6 @@ spec:
   description: Application layer (MSA services)
   sourceRepos:
     - https://github.com/GGingGGang/k8s-gitops.git
-    - https://github.com/GGingGGang/k8s-test-core-server.git
-    - https://github.com/GGingGGang/k8s-test-batch-server.git
-    - https://github.com/GGingGGang/k8s-test-login-server.git
   destinations:
     - server: https://kubernetes.default.svc
       namespace: cicd

@@ -6,9 +6,9 @@ metadata:
 spec:
   project: apps
   source:
-    repoURL: https://github.com/GGingGGang/k8s-test-core-server.git
+    repoURL: https://github.com/GGingGGang/k8s-gitops.git
     targetRevision: main
-    path: deploy/k8s
+    path: manifests/core
   destination:
     server: https://kubernetes.default.svc
     namespace: core
