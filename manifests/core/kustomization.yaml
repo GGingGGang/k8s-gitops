@@ -7,5 +7,5 @@ resources:
   - httproute.yaml
 images:
   - name: core
-    newName: ghcr.io/ggingggang/k8s-test-core-server
-    newTag: de13ef9474c5e0af62f3bf6d63e68924e07ba4c2
+    newName: ghcr.io/ggingggang/svc-core
+    newTag: 2ed532ad7c4db729c1915bf17ff21d8412d501e3
