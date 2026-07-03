@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: batch
+  namespace: batch
+  labels:
+    app.kubernetes.io/name: batch
+    release: kps
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: batch
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

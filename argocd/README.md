@@ -58,7 +58,7 @@ kubectl get pods,svc,httproute -n core
 
 ### `platform` 과 분리된 `apps` AppProject
 
-`apps` 의 `sourceRepos` 는 본 GitOps 레포로 한정, `destinations` 는 서비스 NS(`core`/`batch`/`login`) + Application CR 이 사는 `cicd` 로 한정. 인프라 레포가 앱 NS 를, 앱 레포가 인프라를 건드리지 못하게 권한 경계를 프로젝트로 강제.
+`apps` 의 `sourceRepos` 는 본 GitOps 레포로 한정, `destinations` 는 서비스 NS(`core`/`batch`/`auth`) + Application CR 이 사는 `cicd` 로 한정. 인프라 레포가 앱 NS 를, 앱 레포가 인프라를 건드리지 못하게 권한 경계를 프로젝트로 강제.
 
 ### auto-sync (prune + selfHeal) — 앱은 켬
 
