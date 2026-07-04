@@ -5,6 +5,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - httproute.yaml
+  - servicemonitor.yaml
 images:
   - name: core
     newName: ghcr.io/ggingggang/svc-core
