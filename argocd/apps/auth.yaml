@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: auth
+  namespace: cicd
+spec:
+  project: apps
+  source:
+    repoURL: https://github.com/GGingGGang/k8s-gitops.git
+    targetRevision: main
+    path: manifests/auth
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: auth
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
