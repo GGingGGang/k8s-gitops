@@ -34,6 +34,22 @@ spec:
               value: "8080"
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:MaxRAMPercentage=75.0"
+            - name: REDIS_ADDR
+              value: "redis.data.svc.cluster.local:6379"
+            - name: REDIS_DB
+              value: "2"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: host }
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: username }
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: password }
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: database }
           # JVM 웜업 여유 — startupProbe 로 기동을 감싸고 그 뒤 liveness/readiness 전환
           startupProbe:
             httpGet:

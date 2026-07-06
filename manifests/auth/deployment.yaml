@@ -34,6 +34,21 @@ spec:
               value: "3000"
             - name: NODE_ENV
               value: "production"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: host }
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: port }
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: username }
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: password }
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef: { name: db-creds, key: database }
           livenessProbe:
             httpGet:
               path: /healthz
