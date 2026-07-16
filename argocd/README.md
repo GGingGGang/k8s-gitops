@@ -1,25 +1,29 @@
 # argocd — 앱 레이어 GitOps 진입점
 
-MSA 서비스(현재 `core`)를 ArgoCD 로 배포하는 app-of-apps. 플랫폼 인프라와 **별도 AppProject(`apps`)** 로 분리.
+MSA 서비스(현재 `core`/`batch`/`auth`)를 ArgoCD 로 배포하는 app-of-apps. 플랫폼 인프라와 **별도 AppProject(`apps`)** 로 분리.
 
-본 GitOps 레포는 배포 상태를 소유한다: `argocd/` 에 **Application CR**, `manifests/<svc>/` 에 **실제 매니페스트**(deployment/service/httproute/kustomization). 앱 레포는 소스 코드 + `Dockerfile` + `Jenkinsfile` 만 갖는다.
+본 GitOps 레포는 배포 상태를 소유한다: `argocd/` 에 **Application CR**, `manifests/<svc>/` 에 **실제 매니페스트**(deployment/service/httproute/servicemonitor/kustomization). 앱 레포는 소스 코드 + `Dockerfile` + `Jenkinsfile` 만 갖는다.
 
 ```
 k8s-gitops/
 ├── argocd/
 │   ├── project.yaml        # AppProject `apps` — 소스 레포 + 대상 NS 화이트리스트
-│   ├── root.yaml           # app-of-apps `apps-root` — apps/*.yaml recurse, auto-sync
+│   ├── root.yaml           # app-of-apps `apps-root` — apps/*.yaml include, auto-sync
 │   └── apps/
-│       └── core.yaml       # core Application → manifests/core, dest core NS
+│       ├── auth.yaml       # 서비스별 Application → manifests/<svc>, dest <svc> NS
+│       ├── batch.yaml
+│       └── core.yaml
 └── manifests/
-    └── core/               # deployment / service / httproute / kustomization
+    ├── auth/               # deployment / service / httproute / servicemonitor / kustomization
+    ├── batch/              #   (batch 는 httproute 없음)
+    └── core/
 ```
 
 ## 1. 전제 조건
 
 - ArgoCD 동작 (`cicd` NS)
-- 대상 NS 존재 (`core`)
-- 대상 NS 에 `ghcr-pull` Secret (GHCR private 이미지 pull). PAT 재발급 없이 `build/ghcr-push` 복사:
+- 대상 NS 존재 (`core`/`batch`/`auth`)
+- 대상 NS 마다 `ghcr-pull` Secret (GHCR private 이미지 pull). PAT 재발급 없이 `build/ghcr-push` 복사 (`-n core` 부분만 바꿔 서비스 NS 마다 반복):
   ```bash
   cfg=$(kubectl get secret ghcr-push -n build -o go-template='{{index .data ".dockerconfigjson"}}')
   kubectl create secret generic ghcr-pull -n core --type=kubernetes.io/dockerconfigjson \
@@ -35,15 +39,15 @@ kubectl apply -f argocd/project.yaml
 kubectl apply -f argocd/root.yaml
 ```
 
-`apps-root` 가 `apps/core.yaml` 을 발견 → `core` Application 생성 → `manifests/core` 를 `core` NS 에 sync.
+`apps-root` 가 `apps/*.yaml` 을 발견 → 서비스별(`core`/`batch`/`auth`) Application 생성 → `manifests/<svc>` 를 각 서비스 NS 에 sync.
 
 ## 3. 검증
 
 ```bash
 kubectl get appproject apps -n cicd
-kubectl get application apps-root core -n cicd \
+kubectl get application apps-root core batch auth -n cicd \
   -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status'
-kubectl get pods,svc,httproute -n core
+kubectl get pods,svc,httproute -n core   # batch/auth 도 동일 (batch 는 httproute 없음)
 ```
 
 ## 4. 결정
@@ -76,7 +80,7 @@ GHCR 패키지가 private(anonymous pull 401)이라 서비스 NS 마다 `imagePu
 
 ### 새 서비스 추가
 
-`manifests/<svc>/` 생성(deployment/service/httproute/kustomization) + `apps/<svc>.yaml` 에 Application 추가(`manifests/<svc>` 지시) + 대상 NS 생성 + `apps` AppProject `destinations` 에 NS 추가 + 해당 NS 에 `ghcr-pull` 복사. `apps-root` 가 auto-sync 로 흡수.
+`manifests/<svc>/` 생성(deployment/service/servicemonitor/kustomization, HTTP 노출 시 httproute) + `apps/<svc>.yaml` 에 Application 추가(`manifests/<svc>` 지시) + 대상 NS 생성 + `apps` AppProject `destinations` 에 NS 추가 + 해당 NS 에 `ghcr-pull` 복사. `apps-root` 가 auto-sync 로 흡수.
 
 ### 이미지 태그가 `:latest` 면 재배포 안 됨
 

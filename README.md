@@ -10,9 +10,13 @@ k8s-gitops/
 │   ├── project.yaml       # AppProject `apps`
 │   ├── root.yaml          # app-of-apps `apps-root`
 │   └── apps/
-│       └── core.yaml      # 서비스별 Application → manifests/<svc>
+│       ├── auth.yaml      # 서비스별 Application → manifests/<svc>
+│       ├── batch.yaml
+│       └── core.yaml
 └── manifests/
-    └── core/              # 서비스별 k8s 리소스 (deployment/service/httproute/kustomization)
+    ├── auth/              # 서비스별 k8s 리소스 (deployment/service/httproute/servicemonitor/kustomization)
+    ├── batch/             #   (batch 는 httproute 없음)
+    └── core/
 ```
 
 흐름: 앱 레포 push → Jenkins(Kaniko) → GHCR → `deployBump` 가 `manifests/<svc>/kustomization.yaml` 의 이미지 태그를 불변 SHA 로 bump → ArgoCD 자동 sync.
