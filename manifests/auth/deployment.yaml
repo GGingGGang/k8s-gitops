@@ -49,6 +49,19 @@ spec:
             - name: DB_NAME
               valueFrom:
                 secretKeyRef: { name: db-creds, key: database }
+            - name: REDIS_ADDR
+              value: "redis.data.svc.cluster.local:6379"
+            - name: REDIS_DB
+              value: "0"
+            - name: JWT_ISSUER
+              value: "auth.ggang.cloud"
+            - name: JWT_PRIVATE_KEY_PEM
+              valueFrom:
+                secretKeyRef: { name: jwt-signing-key, key: private.pem }
+            - name: ACCESS_TTL
+              value: "3600"
+            - name: REFRESH_TTL
+              value: "1209600"
           livenessProbe:
             httpGet:
               path: /healthz
