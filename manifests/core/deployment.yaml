@@ -47,6 +47,12 @@ spec:
             - name: DB_NAME
               valueFrom:
                 secretKeyRef: { name: db-creds, key: database }
+            - name: JWKS_URL
+              value: "http://auth.auth.svc.cluster.local:3000/.well-known/jwks.json"
+            - name: JWT_ISSUER
+              value: "auth.ggang.cloud"
+            - name: JWT_AUDIENCE
+              value: "core"
           livenessProbe:
             httpGet:
               path: /healthz
