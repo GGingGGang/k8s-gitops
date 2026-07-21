@@ -8,4 +8,4 @@ resources:
 images:
   - name: batch
     newName: ghcr.io/ggingggang/svc-batch
-    newTag: 41680bd3e809754680bfa24d0d9aeaec9ae4cbbe
+    newTag: 4b4bff05efb0cced69769402f043da7c7ae14f72
