@@ -38,6 +38,8 @@ spec:
               value: "redis.data.svc.cluster.local:6379"
             - name: REDIS_DB
               value: "2"
+            - name: NATS_URL
+              value: "nats://nats.data.svc.cluster.local:4222"
             - name: DB_HOST
               valueFrom:
                 secretKeyRef: { name: db-creds, key: host }
