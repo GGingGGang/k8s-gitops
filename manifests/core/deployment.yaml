@@ -53,6 +53,12 @@ spec:
               value: "auth.ggang.cloud"
             - name: JWT_AUDIENCE
               value: "core"
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gemini-api-key
+                  key: GEMINI_API_KEY
+                  optional: true
           livenessProbe:
             httpGet:
               path: /healthz
