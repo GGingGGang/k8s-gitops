@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: web
+  namespace: cicd
+spec:
+  project: apps
+  source:
+    repoURL: https://github.com/ggingggang/k8s-gitops.git
+    targetRevision: main
+    path: manifests/web
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: web
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
