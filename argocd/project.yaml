@@ -16,6 +16,10 @@ spec:
       namespace: batch
     - server: https://kubernetes.default.svc
       namespace: auth
+    - server: https://kubernetes.default.svc
+      namespace: notify
+    - server: https://kubernetes.default.svc
+      namespace: web
   clusterResourceWhitelist: []
   namespaceResourceWhitelist:
     - group: "*"
