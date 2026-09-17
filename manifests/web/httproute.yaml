@@ -9,7 +9,7 @@ spec:
       namespace: istio-system
       sectionName: https-wildcard
   hostnames:
-    - web.example.com
+    - www.ggang.cloud
   rules:
     - matches:
         - path:
