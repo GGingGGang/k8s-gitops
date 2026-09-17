@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: notify
+  namespace: cicd
+spec:
+  project: apps
+  source:
+    repoURL: https://github.com/ggingggang/k8s-gitops.git
+    targetRevision: main
+    path: manifests/notify
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: notify
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+
