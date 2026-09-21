@@ -34,6 +34,8 @@ spec:
               value: "3000"
             - name: NODE_ENV
               value: "production"
+            - name: CORS_ALLOWED_ORIGINS
+              value: "https://www.ggang.cloud"
             - name: DB_HOST
               valueFrom:
                 secretKeyRef: { name: db-creds, key: host }

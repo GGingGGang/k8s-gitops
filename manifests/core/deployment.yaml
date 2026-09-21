@@ -32,6 +32,8 @@ spec:
           env:
             - name: HTTP_PORT
               value: "8080"
+            - name: CORS_ALLOWED_ORIGINS
+              value: "https://www.ggang.cloud"
             - name: DB_HOST
               valueFrom:
                 secretKeyRef: { name: db-creds, key: host }
