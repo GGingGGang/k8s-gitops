@@ -9,4 +9,4 @@ resources:
 images:
   - name: auth
     newName: ghcr.io/ggingggang/svc-auth
-    newTag: ed63e15d089ee343a0ed960fb73d8a73f57f429f
+    newTag: 01fc54018521cb6d3cb8ebcc5c6e98f72190b93d
