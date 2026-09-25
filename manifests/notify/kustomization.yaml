@@ -8,5 +8,5 @@ resources:
 images:
   - name: notify
     newName: ghcr.io/ggingggang/svc-notify
-    newTag: 6a58bd8e2becde621f30a8206b2c33bde4c4e237
+    newTag: 10478abf4f2d23a9a037f96009d68a87d2fd5669
 
