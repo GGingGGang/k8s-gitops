@@ -9,4 +9,4 @@ resources:
 images:
   - name: core
     newName: ghcr.io/ggingggang/svc-core
-    newTag: 84f75d9151fca02fad4c0fe683d45f419506bbbd
+    newTag: c0b013dc2f1493b90d7a4c808e94054af5974c33
