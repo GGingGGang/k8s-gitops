@@ -25,7 +25,7 @@ k8s-gitops/
 
 서비스 이미지는 GHCR에서 가져오며, `manifests/<service>/kustomization.yaml`의 `images.newTag`에는 CI가 기록한 변경 불가능한 Git SHA 태그를 둡니다.
 
-배포 흐름은 다음과 같습니다. Jenkins의 일반 `main` 빌드가 최신 소스 SHA인지 검증한 뒤 `ci/bump-<service>` Deployment PR을 생성하거나 갱신합니다. 이 PR이 `main`에 병합되면 Argo CD가 Git 변경을 감지하고 해당 Application을 자동 동기화합니다. Jenkins 빌드 성공만으로 배포가 완료되는 것은 아닙니다.
+배포 흐름은 다음과 같습니다. 서비스 CI가 GitOps `main`에 이미지 태그 변경을 직접 push하면 Argo CD가 Git 변경을 감지해 해당 Application을 자동 동기화합니다. Jenkins 성공은 GitOps push까지를 뜻하며, 실제 배포 완료는 Argo CD의 Sync와 Health 상태를 확인해야 합니다.
 
 | 서비스 | namespace | 포함 리소스 | HTTP 노출 |
 | --- | --- | --- | --- |

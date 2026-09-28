@@ -70,7 +70,7 @@ kubectl get servicemonitor -n notify
 
 ## 이미지 배포 흐름
 
-서비스 저장소의 Jenkins 파이프라인은 일반 `main` 빌드에서 최신 소스 SHA를 확인한 뒤 `ci/bump-<service>` Deployment PR을 만들거나 갱신합니다. PR이 `main`에 병합되어 이 저장소의 `images.newTag`가 Git SHA로 바뀌면 Argo CD가 해당 Application을 동기화합니다. 따라서 Jenkins 빌드 성공은 배포 완료를 뜻하지 않으며, PR 병합 후 Application의 Sync와 Health 상태를 확인해야 합니다.
+서비스 저장소의 Jenkins 파이프라인은 이 저장소의 `images.newTag`를 Git SHA로 바꾸고 GitOps `main`에 직접 push합니다. Argo CD는 이 Git 변경을 감지해 해당 Application을 자동 동기화합니다. Jenkins 성공은 GitOps push까지를 뜻하며, 실제 배포 완료는 Application의 Sync와 Health 상태를 확인해야 합니다.
 
 `latest`처럼 바뀔 수 있는 태그는 Git의 desired state와 실제 이미지 digest가 달라도 동기화 상태에 드러나지 않을 수 있으므로 사용하지 않습니다.
 
