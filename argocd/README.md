@@ -1,87 +1,86 @@
-# argocd — 앱 레이어 GitOps 진입점
+# Argo CD 애플리케이션 GitOps
 
-MSA 서비스(현재 `core`/`batch`/`auth`)를 ArgoCD 로 배포하는 app-of-apps. 플랫폼 인프라와 **별도 AppProject(`apps`)** 로 분리.
-
-본 GitOps 레포는 배포 상태를 소유한다: `argocd/` 에 **Application CR**, `manifests/<svc>/` 에 **실제 매니페스트**(deployment/service/httproute/servicemonitor/kustomization). 앱 레포는 소스 코드 + `Dockerfile` + `Jenkinsfile` 만 갖는다.
+`argocd/`는 서비스 계층의 app-of-apps를 정의합니다. `apps-root` Application이 `apps/*.yaml`을 읽어 서비스별 Application을 만들고, 각 Application이 해당 `manifests/<service>` Kustomization을 서비스 namespace에 자동 동기화합니다.
 
 ```
 k8s-gitops/
 ├── argocd/
-│   ├── project.yaml        # AppProject `apps` — 소스 레포 + 대상 NS 화이트리스트
-│   ├── root.yaml           # app-of-apps `apps-root` — apps/*.yaml include, auto-sync
+│   ├── project.yaml        # AppProject `apps`: 소스 저장소와 배포 대상 namespace
+│   ├── root.yaml           # app-of-apps `apps-root`: argocd/apps/*.yaml 관리
 │   └── apps/
-│       ├── auth.yaml       # 서비스별 Application → manifests/<svc>, dest <svc> NS
-│       ├── batch.yaml
-│       └── core.yaml
+│       ├── auth.yaml       # manifests/auth → auth namespace
+│       ├── batch.yaml      # manifests/batch → batch namespace
+│       ├── core.yaml       # manifests/core → core namespace
+│       ├── notify.yaml     # manifests/notify → notify namespace
+│       └── web.yaml        # manifests/web → web namespace
 └── manifests/
     ├── auth/               # deployment / service / httproute / servicemonitor / kustomization
-    ├── batch/              #   (batch 는 httproute 없음)
-    └── core/
+    ├── batch/              # deployment / service / servicemonitor / kustomization
+    ├── core/               # deployment / service / httproute / servicemonitor / kustomization
+    ├── notify/             # deployment / service / servicemonitor / kustomization
+    └── web/                # deployment / service / httproute / kustomization
 ```
 
-## 1. 전제 조건
+## 사전 조건
 
-- ArgoCD 동작 (`cicd` NS)
-- 대상 NS 존재 (`core`/`batch`/`auth`)
-- 대상 NS 마다 `ghcr-pull` Secret (GHCR private 이미지 pull). PAT 재발급 없이 `build/ghcr-push` 복사 (`-n core` 부분만 바꿔 서비스 NS 마다 반복):
+- Argo CD가 `cicd` namespace에서 동작해야 합니다.
+- `core`, `batch`, `auth`, `notify`, `web` namespace가 존재해야 합니다. `apps-root`는 `CreateNamespace=false`를 사용하므로 namespace를 만들지 않습니다.
+- 각 서비스 namespace에는 private GHCR 이미지를 위한 `ghcr-pull` Secret이 있어야 합니다. 아래 예시는 `core`에 만드는 방법이며, 다른 서비스도 namespace만 바꿔 반복합니다.
+
   ```bash
   cfg=$(kubectl get secret ghcr-push -n build -o go-template='{{index .data ".dockerconfigjson"}}')
   kubectl create secret generic ghcr-pull -n core --type=kubernetes.io/dockerconfigjson \
     --from-literal=.dockerconfigjson="$(echo "$cfg" | base64 -d)" --dry-run=client -o yaml | kubectl apply -f -
   ```
 
-## 2. 설치
+- Deployment가 참조하는 서비스별 Secret도 준비해야 합니다. `auth`, `batch`, `core`는 `db-creds`를 사용하고, `auth`는 `jwt-signing-key`, `core`는 선택적인 `gemini-api-key`도 참조합니다.
 
-부트스트랩은 일회성 `kubectl apply` (self-managed adopt). 이후 `apps-root` 가 git 의 `apps/*.yaml` 을 auto-sync.
+## 설치
+
+최초 한 번은 Argo CD가 자신을 관리하기 전의 bootstrap 단계이므로 아래 두 리소스를 적용합니다. 이후 `apps-root`가 Git의 `apps/*.yaml` 변경을 자동 반영합니다.
 
 ```bash
 kubectl apply -f argocd/project.yaml
 kubectl apply -f argocd/root.yaml
 ```
 
-`apps-root` 가 `apps/*.yaml` 을 발견 → 서비스별(`core`/`batch`/`auth`) Application 생성 → `manifests/<svc>` 를 각 서비스 NS 에 sync.
+서비스별 Application은 `automated`, `prune`, `selfHeal`, `ServerSideApply=true`를 사용합니다. `apps-root`도 `automated`, `prune`, `selfHeal`을 사용하며, `syncOptions`에는 `CreateNamespace=false`가 설정되어 있습니다.
 
-## 3. 검증
+## 확인
 
 ```bash
 kubectl get appproject apps -n cicd
-kubectl get application apps-root core batch auth -n cicd \
+kubectl get application apps-root auth batch core notify web -n cicd \
   -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status'
-kubectl get pods,svc,httproute -n core   # batch/auth 도 동일 (batch 는 httproute 없음)
+kubectl get pods,svc,httproute -n core
+kubectl get pods,svc -n batch
+kubectl get pods,svc,httproute -n auth
+kubectl get pods,svc -n notify
+kubectl get pods,svc,httproute -n web
 ```
 
-## 4. 결정
+ServiceMonitor가 있는 `auth`, `batch`, `core`, `notify`는 다음처럼 확인할 수 있습니다.
 
-### 인프라 레포와 분리된 전용 GitOps 레포
+```bash
+kubectl get servicemonitor -n auth
+kubectl get servicemonitor -n batch
+kubectl get servicemonitor -n core
+kubectl get servicemonitor -n notify
+```
 
-앱 레이어 app-of-apps 를 인프라 레포에서 들어내 전용 레포로 격리. *배포 상태(매니페스트 + Application)* 는 본 GitOps 레포, *소스 코드* 는 앱 레포, *인프라/플랫폼* 은 인프라 레포 — 세 관심사를 레포 경계로 분리. ArgoCD 공식 *config vs source code 분리* 의 연장.
+## 이미지 배포 흐름
 
-### 매니페스트를 앱 레포가 아니라 GitOps 레포가 소유
+서비스 저장소의 Jenkins 파이프라인은 일반 `main` 빌드에서 최신 소스 SHA를 확인한 뒤 `ci/bump-<service>` Deployment PR을 만들거나 갱신합니다. PR이 `main`에 병합되어 이 저장소의 `images.newTag`가 Git SHA로 바뀌면 Argo CD가 해당 Application을 동기화합니다. 따라서 Jenkins 빌드 성공은 배포 완료를 뜻하지 않으며, PR 병합 후 Application의 Sync와 Health 상태를 확인해야 합니다.
 
-이미지 태그 bump(CI 산출물)와 소스 코드(사람 산출물)를 같은 레포에 두면 빌드 루프·머지 노이즈·권한 과다가 섞인다. 배포 상태를 본 레포로 들어내면 앱 레포는 소스만, 본 레포는 desired state 만 갖는다. CI 는 `manifests/<svc>/kustomization.yaml` 의 태그만 bump.
+`latest`처럼 바뀔 수 있는 태그는 Git의 desired state와 실제 이미지 digest가 달라도 동기화 상태에 드러나지 않을 수 있으므로 사용하지 않습니다.
 
-### `platform` 과 분리된 `apps` AppProject
+## 서비스 추가
 
-`apps` 의 `sourceRepos` 는 본 GitOps 레포로 한정, `destinations` 는 서비스 NS(`core`/`batch`/`auth`) + Application CR 이 사는 `cicd` 로 한정. 인프라 레포가 앱 NS 를, 앱 레포가 인프라를 건드리지 못하게 권한 경계를 프로젝트로 강제.
+새 서비스에는 다음 변경이 함께 필요합니다.
 
-### auto-sync (prune + selfHeal) — 앱은 켬
+1. `manifests/<service>/`에 `deployment.yaml`, `service.yaml`, `kustomization.yaml`을 추가하고, 관측이 필요하면 `servicemonitor.yaml`, HTTP 공개가 필요하면 `httproute.yaml`을 Kustomization `resources`에 포함합니다.
+2. `argocd/apps/<service>.yaml`에 Application을 추가해 `manifests/<service>`와 배포 namespace를 연결합니다.
+3. `argocd/project.yaml`의 `destinations`에 서비스 namespace를 추가합니다.
+4. 해당 namespace와 필요한 Secret, `ghcr-pull` Secret을 준비합니다.
 
-앱 레이어 Application 은 `automated` 활성. 이미지 태그 bump 커밋 → 자동 배포가 GitOps 루프의 목적. 반면 Jenkins 는 emptyDir 라 sync = pod 재기동 = 빌드 즉사 → 수동 유지. *디스럽션 비용이 다르면 sync 정책도 다르다.*
-
-### 이미지 private → `ghcr-pull`
-
-GHCR 패키지가 private(anonymous pull 401)이라 서비스 NS 마다 `imagePullSecrets`. 시크릿 값은 git 미커밋 — `build/ghcr-push` 를 복사(전제 조건). 후속 OpenBao/ESO 이관 대상.
-
-## 5. 주의 사항
-
-### 부트스트랩 의존
-
-`project.yaml`/`root.yaml` 은 ArgoCD 가 자기 자신을 관리하기 전 단계라 최초 1회 `kubectl apply` 필요. 이후는 git 이 진실원천 — `apps/*.yaml` 추가/삭제는 push 만 하면 `apps-root` 가 반영.
-
-### 새 서비스 추가
-
-`manifests/<svc>/` 생성(deployment/service/servicemonitor/kustomization, HTTP 노출 시 httproute) + `apps/<svc>.yaml` 에 Application 추가(`manifests/<svc>` 지시) + 대상 NS 생성 + `apps` AppProject `destinations` 에 NS 추가 + 해당 NS 에 `ghcr-pull` 복사. `apps-root` 가 auto-sync 로 흡수.
-
-### 이미지 태그가 `:latest` 면 재배포 안 됨
-
-kustomization `images.newTag` 가 `latest` 같은 mutable 태그면 ArgoCD 가 git desired(`:latest`)와 live(`:latest`)를 문자열 비교 → digest 가 바뀌어도 Synced 로 보고 재배포 안 함. CI 가 불변 SHA 태그를 git 에 bump 해야 루프가 닫힘.
+`apps-root`가 `apps/*.yaml`을 자동 동기화하므로 Application 파일을 추가하면 새 Application도 관리 대상에 들어갑니다.
