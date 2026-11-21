@@ -8,4 +8,4 @@ resources:
 images:
   - name: web
     newName: ghcr.io/ggingggang/svc-web
-    newTag: 4f5b19a6e365a851983697bc7ad98207b3c55ae9
+    newTag: 0084320bf046486b62da1d9b356c1cc6cd499984
