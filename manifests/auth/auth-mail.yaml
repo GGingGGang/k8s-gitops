@@ -1,0 +1,22 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: auth-mail
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: SecretStore
+    name: openbao
+  target:
+    name: auth-mail
+    creationPolicy: Owner
+    deletionPolicy: Retain
+  data:
+    - secretKey: SMTP_URL
+      remoteRef:
+        key: auth/mail
+        property: SMTP_URL
+    - secretKey: AUTH_MAIL_ENCRYPTION_KEY
+      remoteRef:
+        key: auth/mail
+        property: AUTH_MAIL_ENCRYPTION_KEY

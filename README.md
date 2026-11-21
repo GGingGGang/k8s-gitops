@@ -29,10 +29,12 @@ k8s-gitops/
 
 | 서비스 | namespace | 포함 리소스 | HTTP 노출 |
 | --- | --- | --- | --- |
-| `auth` | `auth` | Deployment, Service, HTTPRoute, ServiceMonitor | `api.ggang.cloud/v1/auth` → `auth:3000` (접두사 제거) |
+| `auth` | `auth` | Deployment, Service, HTTPRoute, ServiceMonitor, 메일용 SecretStore와 ExternalSecret | `api.ggang.cloud/v1/auth` → `auth:3000` (접두사 제거) |
 | `batch` | `batch` | Deployment, Service, ServiceMonitor | 없음 |
 | `core` | `core` | Deployment, Service, HTTPRoute, ServiceMonitor | `api.ggang.cloud/v1/core` → `core:8080` (접두사 제거) |
 | `notify` | `notify` | Deployment, Service, ServiceMonitor | 없음 |
 | `web` | `web` | Deployment, Service, HTTPRoute | `www.ggang.cloud/` → `web:8080` |
 
 초기 설치, 사전 조건, 운영 확인과 서비스 추가 방법은 [argocd/README.md](./argocd/README.md)를 참고하세요.
+
+가입 메일의 [ExternalSecret](manifests/auth/auth-mail.yaml)은 [SecretStore](manifests/auth/openbao-store.yaml)를 통해 OpenBao KV v2의 `auth/mail`을 읽습니다. `auth-mail` Secret이 준비되면 Deployment가 두 키를 환경 변수로 읽습니다. SMTP 자격 증명 교체 후에는 ExternalSecret 동기화를 확인하고 `auth` Deployment를 재시작하세요.

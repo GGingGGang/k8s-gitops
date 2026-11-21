@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: auth
 resources:
   - deployment.yaml
+  - openbao-store.yaml
+  - auth-mail.yaml
   - service.yaml
   - httproute.yaml
   - servicemonitor.yaml
